@@ -29,6 +29,6 @@ document.addEventListener('keydown',function(e){var k=e.keyCode;Z.idle=Date.now(
 Z.init=function(){try{if(window.tizen&&tizen.tvinputdevice)['0','1','2','3','4','5','6','7','8','9','ColorF0Red','ColorF1Green','ColorF2Yellow','ColorF3Blue','MediaPlayPause'].forEach(function(k){try{tizen.tvinputdevice.registerKey(k)}catch(x){}})}catch(x){}
   Z.build();buildTiles();paint();tick();setInterval(tick,1000);Z.on(data);Z.load();setInterval(Z.load,30*60000);setInterval(function(){data();if(Z.cur==='home'&&Date.now()-Z.idle>15*60000)Z.show('gallery')},30000);
   var m=/[?&]mode=(\w+)/.exec(location.search),d=new Date(),today=Z.ymd(d);
-  if(m&&Z.screens[m[1]])Z.show(m[1]);else if(d.getHours()>=5&&d.getHours()<10&&Z.get('mDay','')!==today){Z.set('mDay',today);Z.show('morning')}else Z.show('home');
+  if(m&&Z.screens[m[1]])Z.show(m[1]);else Z.show('home');
   setTimeout(function(){Z.$('boot').className='gone'},2700)};
 })();
