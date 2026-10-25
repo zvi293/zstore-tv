@@ -1,0 +1,164 @@
+﻿<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920,height=1080">
+<title>Zstore TV</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@200;300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080d;--fg:#f3f1ec;--dim:rgba(243,241,236,.55);--acc:#ff7a45;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:Heebo,Arial,sans-serif}
+.screen{position:fixed;top:0;right:0;bottom:0;left:0;display:none}
+.screen.on{display:block}
+canvas.full{position:absolute;top:0;left:0;width:100%;height:100%}
+.brand{position:absolute;top:3.2vw;left:4vw;font-weight:800;letter-spacing:.3vw;font-size:1.2vw;opacity:.7;direction:ltr}
+.brand b{color:var(--acc)}
+#home{background:radial-gradient(ellipse at 80% 0%,#2a1a3f 0%,transparent 55%),radial-gradient(ellipse at 0% 100%,#3a1d12 0%,transparent 50%),var(--bg)}
+.h-top{position:absolute;top:7vw;right:5vw;left:5vw;display:flex;justify-content:space-between;align-items:flex-start}
+.greet{font-size:2vw;font-weight:300;color:var(--dim)}
+.clock{font-size:11vw;font-weight:200;line-height:1;direction:ltr;text-align:right}
+.dates{font-size:1.9vw;font-weight:300;margin-top:.8vw}
+.dates span{color:var(--acc)}
+.wx{text-align:left;min-width:24vw}
+.wx-now{font-size:5vw;font-weight:200;direction:ltr}
+.wx-now i{font-style:normal;font-size:3.6vw;margin-left:.6vw}
+.wx-desc{font-size:1.5vw;color:var(--dim);margin-bottom:1vw}
+.wx-days{display:flex;justify-content:flex-end}
+.wx-d{text-align:center;font-size:1.2vw;color:var(--dim);margin-right:1.6vw}
+.wx-d b{display:block;font-size:2vw;margin:.3vw 0}
+.tiles{position:absolute;bottom:6vw;right:5vw;left:5vw;display:flex}
+.tile{flex:1;height:12vw;margin-left:1.4vw;border-radius:1.4vw;background:var(--card);border:2px solid var(--line);padding:1.6vw;display:flex;flex-direction:column;justify-content:space-between;transition:transform .2s,border-color .2s,background .2s}
+.tile:last-child{margin-left:0}
+.tile .ic{font-size:3vw}
+.tile .nm{font-size:1.6vw;font-weight:600}
+.tile .ky{font-size:1vw;color:var(--dim)}
+.tile.f{transform:scale(1.07);border-color:var(--acc);background:rgba(255,122,69,.14)}
+.hint{position:absolute;bottom:2.2vw;right:5vw;font-size:1vw;color:var(--dim)}
+.corner{position:absolute;bottom:3vw;left:4vw;font-size:2.4vw;font-weight:200;direction:ltr;opacity:.75}
+.center{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.big{font-size:14vw;font-weight:200;direction:ltr;line-height:1}
+.sub{font-size:1.8vw;color:var(--dim);margin-top:1.2vw}
+.toast{position:fixed;top:3vw;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);border:1px solid var(--line);padding:.8vw 2vw;border-radius:3vw;font-size:1.4vw;opacity:0;transition:opacity .4s;z-index:9}
+.toast.on{opacity:1}
+.sky,.veil{position:absolute;top:0;right:0;bottom:0;left:0;background:#000}
+.veil{opacity:0;pointer-events:none}
+#focus{background:radial-gradient(circle at 50% 45%,#16122b,#07080d 70%)}
+.ring{width:34vw;height:34vw}
+.ring circle{fill:none;stroke-width:10}
+#clockscr{background:#000}
+#clockscr .big{font-size:20vw;color:#d9d6cf}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<section class="screen on" id="home">
+  <div class="brand">ZSTORE <b>TV</b></div>
+  <div class="h-top">
+    <div><div class="greet" id="greet"></div><div class="clock" id="hClock">--:--</div>
+      <div class="dates"><span id="hHeb"></span> · <span style="color:var(--fg)" id="hGreg"></span></div></div>
+    <div class="wx"><div class="wx-now" id="wxNow">--°</div><div class="wx-desc" id="wxDesc">פתח תקווה</div><div class="wx-days" id="wxDays"></div></div>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div class="hint">חיצים לבחירה · OK לפתיחה · מקשים 1–5 לקיצור · חזור = בית</div>
+</section>
+<section class="screen" id="gallery"><canvas class="full" id="galCv"></canvas><div class="corner" id="galClock"></div></section>
+<section class="screen" id="sunrise"><div class="sky" id="sky"></div>
+  <div class="center"><div class="big" id="sunClock" style="opacity:0"></div><div class="sub" id="sunSub"></div></div></section>
+<section class="screen" id="sleep"><canvas class="full" id="rainCv"></canvas><div class="veil" id="veil"></div><div class="corner" id="sleepInfo" style="font-size:1.4vw"></div></section>
+<section class="screen" id="focus"><div class="center">
+  <svg class="ring" viewBox="0 0 200 200"><circle cx="100" cy="100" r="90" stroke="rgba(255,255,255,.08)"/>
+  <circle id="fRing" cx="100" cy="100" r="90" stroke="#ff7a45" stroke-linecap="round" transform="rotate(-90 100 100)" stroke-dasharray="565.5" stroke-dashoffset="0"/></svg>
+  <div style="position:absolute;text-align:center"><div class="big" id="fTime" style="font-size:7vw">25:00</div><div class="sub" id="fState">OK להתחלה</div></div>
+</div></section>
+<section class="screen" id="clockscr"><div class="center"><div class="big" id="cClock"></div><div class="sub" id="cDate"></div></div></section>
+<script>
+(function(){
+var $=function(id){return document.getElementById(id)};
+var pad=function(n){return (n<10?'0':'')+n};
+function hhmm(d){return pad(d.getHours())+':'+pad(d.getMinutes())}
+function toast(t){var e=$('toast');e.textContent=t;e.className='toast on';clearTimeout(toast.t);toast.t=setTimeout(function(){e.className='toast'},2200)}
+try{if(window.tizen&&tizen.tvinputdevice){['0','1','2','3','4','5','6','7','8','9','ColorF0Red','ColorF1Green','ColorF2Yellow','ColorF3Blue','MediaPlayPause'].forEach(function(k){try{tizen.tvinputdevice.registerKey(k)}catch(e){}})}}catch(e){}
+var MODES=[{id:'gallery',ic:'🎨',nm:'גלריה'},{id:'sunrise',ic:'🌅',nm:'זריחה'},{id:'sleep',ic:'🌧️',nm:'הירדמות'},{id:'focus',ic:'🎯',nm:'פוקוס'},{id:'clockscr',ic:'🕰️',nm:'שעון'}];
+var cur='home',focusIdx=0,starts={},stops={},raf={};
+var tilesEl=$('tiles');
+MODES.forEach(function(m,i){var d=document.createElement('div');d.className='tile';d.innerHTML='<div class="ic">'+m.ic+'</div><div><div class="nm">'+m.nm+'</div><div class="ky">מקש '+(i+1)+'</div></div>';tilesEl.appendChild(d)});
+function paintTiles(){[].forEach.call(tilesEl.children,function(t,i){t.className='tile'+(i===focusIdx?' f':'')})}
+paintTiles();
+function show(id){if(stops[cur])stops[cur]();[].forEach.call(document.querySelectorAll('.screen'),function(s){s.className='screen'+(s.id===id?' on':'')});cur=id;if(starts[id])starts[id]()}
+var hebFmt=null;try{hebFmt=new Intl.DateTimeFormat('he-IL-u-ca-hebrew',{day:'numeric',month:'long',year:'numeric'})}catch(e){}
+var gregFmt=new Intl.DateTimeFormat('he-IL',{weekday:'long',day:'numeric',month:'long'});
+function hebDate(d){if(!hebFmt)return '';try{return hebFmt.format(d)}catch(e){return ''}}
+function tick(){var d=new Date(),h=d.getHours();$('hClock').textContent=hhmm(d);
+  $('greet').textContent=h<5?'לילה טוב':h<12?'בוקר טוב':h<17?'צהריים טובים':h<21?'ערב טוב':'לילה טוב';
+  $('hHeb').textContent=hebDate(d);$('hGreg').textContent=gregFmt.format(d);$('galClock').textContent=hhmm(d);$('cClock').textContent=hhmm(d);
+  $('cDate').textContent=gregFmt.format(d)+'  ·  '+hebDate(d)}
+setInterval(tick,1000);tick();
+var WX={0:['☀️','בהיר'],1:['🌤️','בהיר ברובו'],2:['⛅','מעונן חלקית'],3:['☁️','מעונן'],45:['🌫️','ערפל'],48:['🌫️','ערפל'],51:['🌦️','טפטוף'],53:['🌦️','טפטוף'],55:['🌦️','טפטוף'],61:['🌧️','גשם קל'],63:['🌧️','גשם'],65:['🌧️','גשם חזק'],80:['🌦️','ממטרים'],81:['🌧️','ממטרים'],82:['⛈️','ממטרים חזקים'],95:['⛈️','סופת רעמים'],96:['⛈️','סופת רעמים'],99:['⛈️','סופת רעמים']};
+function wx(c){return WX[c]||['🌡️','']}
+var DAYS=['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','ש׳'];
+function loadWeather(){var x=new XMLHttpRequest();
+  x.open('GET','https://api.open-meteo.com/v1/forecast?latitude=32.087&longitude=34.887&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FJerusalem&forecast_days=4');
+  x.onload=function(){try{var j=JSON.parse(x.responseText),c=j.current,w=wx(c.weather_code);
+    $('wxNow').innerHTML=Math.round(c.temperature_2m)+'°<i>'+w[0]+'</i>';$('wxDesc').textContent='פתח תקווה · '+w[1];
+    var h='';for(var i=1;i<4;i++){var dt=new Date(j.daily.time[i]+'T12:00');h+='<div class="wx-d">'+DAYS[dt.getDay()]+'<b>'+wx(j.daily.weather_code[i])[0]+'</b>'+Math.round(j.daily.temperature_2m_max[i])+'° / '+Math.round(j.daily.temperature_2m_min[i])+'°</div>'}
+    $('wxDays').innerHTML=h}catch(e){}};x.send()}
+loadWeather();setInterval(loadWeather,30*60*1000);
+function fitCv(cv){cv.width=window.innerWidth;cv.height=window.innerHeight;return cv.getContext('2d')}
+var PALS=[['#ff7a45','#7c5cff','#0b0f1f','#ffd166'],['#06d6a0','#118ab2','#073b4c','#ffd166'],['#ef476f','#ffd166','#26547c','#06d6a0'],['#f4a261','#e76f51','#264653','#2a9d8f'],['#c77dff','#7b2cbf','#10002b','#e0aaff']];
+starts.gallery=function(){var cv=$('galCv'),g=fitCv(cv),W=cv.width,H=cv.height,t0=Date.now(),pal=PALS[Math.floor(Math.random()*PALS.length)],last=Date.now(),orbs=[];
+  for(var i=0;i<7;i++)orbs.push({x:Math.random(),y:Math.random(),r:.25+Math.random()*.35,s:.00004+Math.random()*.00008,p:Math.random()*6.28,c:pal[i%4]});
+  function frame(){var t=Date.now()-t0;
+    if(Date.now()-last>45000){last=Date.now();pal=PALS[Math.floor(Math.random()*PALS.length)];orbs.forEach(function(o,i){o.c=pal[i%4]});toast('יצירה חדשה')}
+    g.globalCompositeOperation='source-over';g.fillStyle=pal[2];g.fillRect(0,0,W,H);g.globalCompositeOperation='lighter';
+    orbs.forEach(function(o){var x=(o.x+Math.sin(t*o.s+o.p)*.25)*W,y=(o.y+Math.cos(t*o.s*1.3+o.p)*.22)*H,r=o.r*Math.max(W,H),gr=g.createRadialGradient(x,y,0,x,y,r);
+      gr.addColorStop(0,o.c+'aa');gr.addColorStop(1,o.c+'00');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,6.283);g.fill()});
+    raf.gallery=requestAnimationFrame(frame)}
+  frame()};
+stops.gallery=function(){cancelAnimationFrame(raf.gallery)};
+var SUN_MIN=20,sunTimer=null;
+starts.sunrise=function(){var t0=Date.now(),dur=SUN_MIN*60000,sky=$('sky');$('sunSub').textContent='זריחה של '+SUN_MIN+' דקות · OK = התחל מחדש';
+  function step(){var k=Math.min(1,(Date.now()-t0)/dur),e=k*k*(3-2*k);
+    var top='hsl('+(230-200*e)+','+(40+40*e)+'%,'+(2+55*e)+'%)',mid='hsl('+(260-235*e)+','+(50+40*e)+'%,'+(3+50*e)+'%)',bot='hsl('+(20+20*e)+',95%,'+(4+60*e)+'%)';
+    sky.style.background='radial-gradient(ellipse at 50% '+(115-35*e)+'%,'+bot+' 0%,'+mid+' 35%,'+top+' 75%)';
+    var c=$('sunClock');c.textContent=hhmm(new Date());c.style.opacity=(.15+.75*e).toFixed(2);c.style.color=e>.6?'#3a2210':'#fff';
+    if(k<1)sunTimer=setTimeout(step,1000)}
+  clearTimeout(sunTimer);step()};
+stops.sunrise=function(){clearTimeout(sunTimer)};
+var SLEEP_MIN=30,ac=null,gainN=null,sleepT0=0,sleepIv=null;
+function startNoise(){try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return;ac=new A();var n=ac.sampleRate*4,buf=ac.createBuffer(1,n,ac.sampleRate),d=buf.getChannelData(0),l=0;
+  for(var i=0;i<n;i++){var w=Math.random()*2-1;l=(l+0.02*w)/1.02;d[i]=l*3.5}
+  var src=ac.createBufferSource();src.buffer=buf;src.loop=true;var f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=1200;
+  gainN=ac.createGain();gainN.gain.value=0.5;src.connect(f);f.connect(gainN);gainN.connect(ac.destination);src.start()}catch(e){}}
+starts.sleep=function(){var cv=$('rainCv'),g=fitCv(cv),W=cv.width,H=cv.height,drops=[];
+  for(var i=0;i<420;i++)drops.push({x:Math.random()*W,y:Math.random()*H,l:10+Math.random()*28,v:8+Math.random()*14});
+  function frame(){g.fillStyle='rgba(6,10,22,.45)';g.fillRect(0,0,W,H);g.strokeStyle='rgba(160,190,255,.35)';g.lineWidth=1.4;g.beginPath();
+    drops.forEach(function(d){g.moveTo(d.x,d.y);g.lineTo(d.x-2,d.y+d.l);d.y+=d.v;d.x-=.6;if(d.y>H){d.y=-d.l;d.x=Math.random()*W}});g.stroke();raf.sleep=requestAnimationFrame(frame)}
+  frame();startNoise();sleepT0=Date.now();$('sleepInfo').textContent='נרדם בעוד '+SLEEP_MIN+' דק׳ · ▲▼ לשינוי';
+  sleepIv=setInterval(function(){var k=Math.min(1,(Date.now()-sleepT0)/(SLEEP_MIN*60000));$('veil').style.opacity=(k*.97).toFixed(2);if(gainN)gainN.gain.value=0.5*(1-k);
+    var left=Math.max(0,Math.ceil(SLEEP_MIN-(Date.now()-sleepT0)/60000));$('sleepInfo').textContent=left>0?'נרדם בעוד '+left+' דק׳':'לילה טוב 🌙';
+    if(k>=1)cancelAnimationFrame(raf.sleep)},5000)};
+stops.sleep=function(){cancelAnimationFrame(raf.sleep);clearInterval(sleepIv);$('veil').style.opacity=0;try{if(ac)ac.close()}catch(e){}ac=null;gainN=null};
+var F={work:25,brk:5,phase:'work',left:25*60,run:false,iv:null};
+function fPaint(){var tot=(F.phase==='work'?F.work:F.brk)*60;$('fTime').textContent=pad(Math.floor(F.left/60))+':'+pad(F.left%60);
+  $('fRing').setAttribute('stroke-dashoffset',(565.5*(1-F.left/tot)).toFixed(1));$('fRing').setAttribute('stroke',F.phase==='work'?'#ff7a45':'#06d6a0');
+  $('fState').textContent=(F.phase==='work'?'עבודה':'הפסקה')+' · '+(F.run?'OK להשהיה':'OK להתחלה')+' · אדום = איפוס'}
+function beep(){try{var A=window.AudioContext||window.webkitAudioContext,a=new A(),o=a.createOscillator(),g=a.createGain();o.frequency.value=880;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();setTimeout(function(){o.stop();a.close()},600)}catch(e){}}
+function fToggle(){F.run=!F.run;clearInterval(F.iv);if(F.run)F.iv=setInterval(function(){F.left--;if(F.left<=0){beep();F.phase=F.phase==='work'?'brk':'work';F.left=(F.phase==='work'?F.work:F.brk)*60;toast(F.phase==='work'?'חוזרים לעבודה 💪':'הפסקה ☕')}fPaint()},1000);fPaint()}
+starts.focus=fPaint;
+var K={LEFT:37,UP:38,RIGHT:39,DOWN:40,OK:13,BACK:10009,ESC:27,BKSP:8,RED:403,PP:10252};
+document.addEventListener('keydown',function(e){var k=e.keyCode;
+  if(k>=49&&k<=53){show(MODES[k-49].id);e.preventDefault();return}
+  if(k===48){show('home');return}
+  if(cur==='home'){if(k===K.LEFT){focusIdx=Math.min(MODES.length-1,focusIdx+1);paintTiles()}else if(k===K.RIGHT){focusIdx=Math.max(0,focusIdx-1);paintTiles()}else if(k===K.OK)show(MODES[focusIdx].id);return}
+  if(k===K.BACK||k===K.ESC||k===K.BKSP){show('home');e.preventDefault();return}
+  if(cur==='focus'&&(k===K.OK||k===K.PP))fToggle();
+  if(cur==='focus'&&k===K.RED){F.run=false;clearInterval(F.iv);F.phase='work';F.left=F.work*60;fPaint()}
+  if(cur==='sunrise'&&k===K.OK)starts.sunrise();
+  if(cur==='sleep'&&(k===K.UP||k===K.DOWN)){SLEEP_MIN=k===K.UP?Math.min(90,SLEEP_MIN+10):Math.max(10,SLEEP_MIN-10);sleepT0=Date.now();toast('טיימר: '+SLEEP_MIN+' דק׳')}
+  if(cur==='gallery'&&k===K.OK){stops.gallery();starts.gallery()}});
+var m=/[?&]mode=(\w+)/.exec(location.search);if(m&&document.getElementById(m[1]))show(m[1]);
+})();
+</script>
+</body>
+</html>
